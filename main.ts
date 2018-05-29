@@ -71,12 +71,50 @@ namespace apds9960 {
         let val = pins.i2cReadNumber(addr, NumberFormat.UInt8BE);
         return val;
     }
+    
+    function rgb2hue(r: number, g: number, b: number): number {
+        // no float support for pxt ts
+        r = r * 100 / 255;
+        g = g * 100 / 255;
+        b = b * 100 / 255;
+
+        let max = Math.max(r, Math.max(g, b))
+        let min = Math.min(r, Math.min(g, b))
+        let c = max - min;
+        let hue = 0;
+        let segment = 0;
+        let shift = 0;
+        if (c != 0) {
+            switch (max) {
+                case r:
+                    segment = (g - b) * 100 / c;
+                    shift = 0;       // R° / (360° / hex sides)
+                    if (segment < 0) {          // hue > 180, full rotation
+                        shift = 360 / 60;         // R° / (360° / hex sides)
+                    }
+                    hue = segment + shift;
+                    break;
+                case g:
+                    segment = (b - r) * 100 / c;
+                    shift = 200;     // G° / (360° / hex sides)
+                    hue = segment + shift;
+                    break;
+                case b:
+                    segment = (r - g) * 100 / c;
+                    shift = 400;     // B° / (360° / hex sides)
+                    hue = segment + shift;
+                    break;
+            }
+
+        }
+        return hue * 60/100;
+    }
 
     //% blockId=apds9960_init block="APDS9960 Init"
     //% weight=100
     export function Init(): void {
         i2cwrite(ADDR, APDS9960_ATIME, 252) // default inte time 4x2.78ms
-        i2cwrite(ADDR, APDS9960_CONTROL, 0x03) // 2x Gain
+        i2cwrite(ADDR, APDS9960_CONTROL, 0x03) // todo: make gain adjustable
         i2cwrite(ADDR, APDS9960_ENABLE, 0x00) // put everything off
         i2cwrite(ADDR, APDS9960_GCONF4, 0x00) // disable gesture mode
         i2cwrite(ADDR, APDS9960_AICLEAR, 0x00) // clear all interrupt
@@ -101,7 +139,7 @@ namespace apds9960 {
     }
     //% blockId=apds9960_readcolor block="APDS9960 Get Color"
     //% weight=98
-    export function ReadColor(): string {
+    export function ReadColor(): number {
         let tmp = i2cread(ADDR, APDS9960_STATUS) & 0x1;
         while(!tmp){
             basic.pause(5);
@@ -111,8 +149,13 @@ namespace apds9960 {
         let r = i2cread(ADDR, APDS9960_RDATAL) + i2cread(ADDR, APDS9960_RDATAH)*256;
         let g = i2cread(ADDR, APDS9960_GDATAL) + i2cread(ADDR, APDS9960_GDATAH)*256;
         let b = i2cread(ADDR, APDS9960_BDATAL) + i2cread(ADDR, APDS9960_BDATAH)*256;
-        
-        return '#'+c+','+r+','+g+','+b
+        // map to rgb based on clear channel
+        let avg = c/3;
+        r = r*255/avg;
+        g = g*255/avg;
+        b = b*255/avg;
+        let hue = rgb2hue(r,g,b);
+        return hue
     }
 
 }
