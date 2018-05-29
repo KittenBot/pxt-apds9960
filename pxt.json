@@ -1,0 +1,17 @@
+{
+    "name": "apds9960",
+    "version": "0.1.0",
+    "description": "APDS9960 Extension for microbit",
+    "license": "MIT",
+    "dependencies": {
+        "core": "*"
+    },
+    "files": [
+        "README.md",
+        "main.ts"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "public": true
+}
