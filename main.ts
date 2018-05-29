@@ -5,7 +5,7 @@ load dependency
 */
 
 
-//% color="#31C7D5" weight=10 icon="\uf0eb"
+//% color="#31C7D5" weight=10 icon="\uf06e"
 namespace apds9960 {
     const ADDR = 0x39
     const APDS9960_RAM = 0x00
@@ -76,8 +76,12 @@ namespace apds9960 {
     //% weight=100
     export function Init(): void {
         i2cwrite(ADDR, APDS9960_ATIME, 252) // default inte time 4x2.78ms
-        i2cwrite(ADDR, APDS9960_CONTROL, 0x01) // 2x Gain
-        
+        i2cwrite(ADDR, APDS9960_CONTROL, 0x03) // 2x Gain
+        i2cwrite(ADDR, APDS9960_ENABLE, 0x00) // put everything off
+        i2cwrite(ADDR, APDS9960_GCONF4, 0x00) // disable gesture mode
+        i2cwrite(ADDR, APDS9960_AICLEAR, 0x00) // clear all interrupt
+        // power on
+        i2cwrite(ADDR, APDS9960_ENABLE, 0x01) // clear all interrupt
     }
     /**
      * Gets APDS9960 CHIP ID
@@ -89,7 +93,26 @@ namespace apds9960 {
         let chipid = i2cread(ADDR, APDS9960_ID);
         return chipid;
     }
-
-
+    //% blockId=apds9960_colormode block="APDS9960 Color Mode"
+    //% weight=98
+    export function ColorMode(): void {
+        let tmp = i2cread(ADDR, APDS9960_ENABLE) | 0x2;
+        i2cwrite(ADDR, APDS9960_ENABLE, tmp);
+    }
+    //% blockId=apds9960_readcolor block="APDS9960 Get Color"
+    //% weight=98
+    export function ReadColor(): string {
+        let tmp = i2cread(ADDR, APDS9960_STATUS) & 0x1;
+        while(!tmp){
+            basic.pause(5);
+            tmp = i2cread(ADDR, APDS9960_STATUS) & 0x1;
+        }
+        let c = i2cread(ADDR, APDS9960_CDATAL) + i2cread(ADDR, APDS9960_CDATAH)*256;
+        let r = i2cread(ADDR, APDS9960_RDATAL) + i2cread(ADDR, APDS9960_RDATAH)*256;
+        let g = i2cread(ADDR, APDS9960_GDATAL) + i2cread(ADDR, APDS9960_GDATAH)*256;
+        let b = i2cread(ADDR, APDS9960_BDATAL) + i2cread(ADDR, APDS9960_BDATAH)*256;
+        
+        return '#'+c+','+r+','+g+','+b
+    }
 
 }
